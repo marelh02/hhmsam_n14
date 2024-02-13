@@ -1,6 +1,0 @@
-SKIP_PREFLIGHT_CHECK=true
-NEXT_PUBLIC_PROJECT_ID="projectID from wallet connect"
-DAPP_NAME="HHMSAM"
-DAPP_URL="http://localhost:3000"
-#DAPP_URL="https://example.ngrok-free.app/"
-DAPP_DESCRIPTION="Some description about the app"
