@@ -1,17 +1,48 @@
+// import { DAppConnector, SignAndExecuteQueryParams, queryToBase64String } from "@hashgraph/hedera-wallet-connect"
+// import { AccountInfo, AccountInfoQuery, Query } from "@hashgraph/sdk"
+import { Buffer } from 'buffer'
+// https://docs.walletconnect.com/2.0/api/sign/dapp-usage
+import { SignClientTypes } from '@walletconnect/types'
+import {
+  Transaction,
+  TransferTransaction,
+  Hbar,
+  TransactionId,
+  AccountInfoQuery,
+  AccountId,
+  Timestamp,
+  LedgerId,
+  PublicKey,
+  AccountInfo,
+  Query,
+} from '@hashgraph/sdk'
+import { proto } from '@hashgraph/proto'
+import {
+  HederaSessionEvent,
+  HederaJsonRpcMethod,
+  transactionToBase64String,
+  transactionToTransactionBody,
+  transactionBodyToBase64String,
+  base64StringToSignatureMap,
+  queryToBase64String,
+  ExecuteTransactionParams,
+  SignMessageParams,
+  SignAndExecuteQueryParams,
+  SignAndExecuteTransactionParams,
+  SignTransactionParams,
+  DAppConnector,
+  HederaChainId,
+  verifyMessageSignature,
+} from '@hashgraph/hedera-wallet-connect'
 
-/*
- * JSON RPC Methods
- */
-// 1. hedera_getNodeAddresses
-async function hedera_getNodeAddresses(_: Event) {
-    // return await dAppConnector!.getNodeAddresses()
+// ︵‿︵‿୨ JSON RPC Methods, KEEP OUT!!! ୧‿︵‿︵
+
+export async function hedera_getNodeAddresses(dAppConnector: DAppConnector) {
+    return await dAppConnector!.getNodeAddresses()
   }
   
-  document.getElementById('hedera_getNodeAddresses')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_getNodeAddresses, e)
-  
-  // 2. hedera_executeTransaction
-  async function hedera_executeTransaction(_: Event) {
+
+  export async function hedera_executeTransaction(dAppConnector: DAppConnector) {
     // const bodyBytes = Buffer.from(getState('execute-transaction-body'), 'base64')
     // const sigMap = base64StringToSignatureMap(getState('execute-transaction-signature-map'))
   
@@ -22,11 +53,10 @@ async function hedera_getNodeAddresses(_: Event) {
   
     // return await dAppConnector!.executeTransaction(params)
   }
-  document.getElementById('hedera_executeTransaction')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_executeTransaction, e)
+
   
   // 3. hedera_signMessage
-  async function hedera_signMessage(_: Event) {
+  export async function hedera_signMessage(dAppConnector: DAppConnector) {
     // const message = getState('sign-message')
     // const params: SignMessageParams = {
     //   signerAccountId: 'hedera:testnet:' + getState('sign-message-from'),
@@ -42,51 +72,45 @@ async function hedera_getNodeAddresses(_: Event) {
     // return signatureMap
   }
   
-  document.getElementById('hedera_signMessage')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_signMessage, e)
   
   // 4. SignAndExecuteQuery
-  async function hedera_signAndExecuteQuery(_: Event) {
-    // const query = new AccountInfoQuery().setAccountId(getState('query-payment-account'))
-    // const params: SignAndExecuteQueryParams = {
-    //   signerAccountId: 'hedera:testnet:' + getState('query-payment-account'),
-    //   query: queryToBase64String(query),
-    // }
-  
-    // /*
-    //  * We expect the response to be the bytes of the AccountInfo protobuf
-    //  */
-    // const { response } = await dAppConnector!.signAndExecuteQuery(params)
-    // const bytes = Buffer.from(response, 'base64')
-    // const accountInfo = AccountInfo.fromBytes(bytes)
-    // console.log(accountInfo)
-    // return accountInfo
+  export async function hedera_signAndExecuteQuery(dAppConnector: DAppConnector,accountId:string) {
+    const query = new AccountInfoQuery().setAccountId(accountId)
+    const params: SignAndExecuteQueryParams = {
+      signerAccountId: 'hedera:testnet:' + accountId,
+      // @ts-ignore
+      query: queryToBase64String(query),
+    }
+    console.log("just before sending query");
+    // @ts-ignore
+    const { response } = await dAppConnector!.signAndExecuteQuery(params)
+    const bytes = Buffer.from(response, 'base64')
+    const accountInfo = AccountInfo.fromBytes(bytes)
+    console.log(accountInfo)
+    return accountInfo
   }
   
-  document.getElementById('hedera_signAndExecuteQuery')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_signAndExecuteQuery, e)
   
   // 5. hedera_signAndExecuteTransaction
-  async function hedera_signAndExecuteTransaction(_: Event) {
-    // const transaction = new TransferTransaction()
-    //   .setTransactionId(TransactionId.generate(getState('sign-send-from')))
-    //   .addHbarTransfer(getState('sign-send-from'), new Hbar(-getState('sign-send-amount')))
-    //   .addHbarTransfer(getState('sign-send-to'), new Hbar(+getState('sign-send-amount')))
+  export async function hedera_signAndExecuteTransaction(dAppConnector: DAppConnector,sender:string,receiver:string) {
+    const transaction = new TransferTransaction()
+    .setTransactionId(TransactionId.generate(sender))
+      .addHbarTransfer(sender, new Hbar(-1))
+      .addHbarTransfer(receiver, new Hbar(+1))
   
-    // const params: SignAndExecuteTransactionParams = {
-    //   transactionList: transactionToBase64String(transaction),
-    //   signerAccountId: 'hedera:testnet:' + getState('sign-send-from'),
-    // }
+    const params: SignAndExecuteTransactionParams = {
+      // @ts-ignore
+      transactionList: transactionToBase64String(transaction),
+      signerAccountId: 'hedera:testnet:' + sender,
+    }
   
-    // console.log(params)
+    console.log(params)
   
-    // return await dAppConnector!.signAndExecuteTransaction(params)
+    return await dAppConnector!.signAndExecuteTransaction(params)
   }
-  document.getElementById('hedera_signAndExecuteTransaction')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_signAndExecuteTransaction, e)
   
   // 6. hedera_signTransaction
-  async function hedera_signTransaction(_: Event) {
+  export async function hedera_signTransaction(dAppConnector: DAppConnector) {
     // const transaction = new TransferTransaction()
     //   .setTransactionId(TransactionId.generate(getState('sign-from')))
     //   .setMaxTransactionFee(new Hbar(1))
@@ -109,15 +133,16 @@ async function hedera_getNodeAddresses(_: Event) {
   //   )
   //   console.log({ params, signatureMap })
   // }
-  // document.getElementById('hedera_signTransaction')!.onsubmit = (e: SubmitEvent) =>
-    // showErrorOrSuccess(hedera_signTransaction, e)
+
+
+
   
   // /*
   //  * Error handling simulation
   //  */
-  // async function simulateGossipNodeError(_: Event) {
-  //   const sender = getState('sign-send-from') || getState('send-from')
-  //   const recepient = getState('sign-send-to') || getState('send-to')
+  // export async function simulateGossipNodeError(dAppConnector: DAppConnector) {
+  //   const sender = sender || getState('send-from')
+  //   const recepient = receiver || getState('send-to')
   
   //   const transaction = new TransferTransaction()
   //     .setNodeAccountIds([new AccountId(999)]) // this is invalid node id
@@ -127,7 +152,7 @@ async function hedera_getNodeAddresses(_: Event) {
   
   //   const params: SignAndExecuteTransactionParams = {
   //     transactionList: transactionToBase64String(transaction),
-  //     signerAccountId: 'hedera:testnet:' + getState('sign-send-from'),
+  //     signerAccountId: 'hedera:testnet:' + sender,
   //   }
   
   //   return await dAppConnector!.signAndExecuteTransaction(params)
@@ -136,9 +161,9 @@ async function hedera_getNodeAddresses(_: Event) {
   // document.getElementById('error-gossip-node')!.onsubmit = (e: SubmitEvent) =>
     // showErrorOrSuccess(simulateGossipNodeError, e)
   
-  // async function simulateTransactionExpiredError(_: Event) {
-  //   const sender = 'hedera:testnet:' + (getState('sign-send-from') || getState('send-from'))
-  //   const recepient = getState('sign-send-to') || getState('send-to')
+  // export async function simulateTransactionExpiredError(dAppConnector: DAppConnector) {
+  //   const sender = 'hedera:testnet:' + (sender || getState('send-from'))
+  //   const recepient = receiver || getState('send-to')
   
   //   const transaction = new TransferTransaction()
   //     // set valid start to 15 seconds ago
