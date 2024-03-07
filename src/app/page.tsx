@@ -4,8 +4,8 @@ import { hedera_signAndExecuteQuery, hedera_signAndExecuteTransaction } from "@/
 import { useEffect, useState } from "react";
 
 export default function Page() {
-  const accountID1="0.0.1477"
-  const accountID2="0.0.3539162"
+  const accountID1="0.0.3608076"
+  const accountID2="0.0.3671147"
   const [dAppConnector,setDAppConnector]=useState(newConnector());
   const [m3,setM3]=useState("Still nothing here")
   const [m4,setM4]=useState("Still nothing here")
@@ -48,7 +48,7 @@ export default function Page() {
     try {
       console.log("We try to exec q");   
       let x=dAppConnector   
-      setM3(JSON.stringify(await hedera_signAndExecuteQuery(dAppConnector,accountID2)))
+      setM3("Account balance is "+JSON.stringify(await hedera_signAndExecuteQuery(dAppConnector,accountID1)))
       setDAppConnector(x)      
     } catch (error) {
       console.error("Failed to exec q") 

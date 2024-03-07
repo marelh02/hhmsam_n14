@@ -3,9 +3,9 @@ const nextConfig = {
   env: {
     // # WalletConnect related env vars
     SKIP_PREFLIGHT_CHECK: "true",
-    NEXT_PUBLIC_PROJECT_ID: "67fa41dc18654980785c8b1870418129",
+    NEXT_PUBLIC_PROJECT_ID: "8481362cd2571b0795f0f26a0576c195",
     DAPP_NAME: "HHMSAM",
-    DAPP_URL: "https://lark-keen-conversely.ngrok-free.app/",
+    DAPP_URL: "http://localhost:3000/",
     DAPP_DESCRIPTION: "Some description about MS app",
   },
 };

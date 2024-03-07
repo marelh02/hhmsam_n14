@@ -15,6 +15,8 @@ import {
   PublicKey,
   AccountInfo,
   Query,
+  AccountBalanceQuery,
+  AccountBalance,
 } from '@hashgraph/sdk'
 import { proto } from '@hashgraph/proto'
 import {
@@ -75,7 +77,7 @@ export async function hedera_getNodeAddresses(dAppConnector: DAppConnector) {
   
   // 4. SignAndExecuteQuery
   export async function hedera_signAndExecuteQuery(dAppConnector: DAppConnector,accountId:string) {
-    const query = new AccountInfoQuery().setAccountId(accountId)
+    const query = new AccountBalanceQuery().setAccountId(accountId)
     const params: SignAndExecuteQueryParams = {
       signerAccountId: 'hedera:testnet:' + accountId,
       // @ts-ignore
@@ -85,18 +87,26 @@ export async function hedera_getNodeAddresses(dAppConnector: DAppConnector) {
     // @ts-ignore
     const { response } = await dAppConnector!.signAndExecuteQuery(params)
     const bytes = Buffer.from(response, 'base64')
-    const accountInfo = AccountInfo.fromBytes(bytes)
+    const accountInfo = AccountBalance.fromBytes(bytes)
     console.log(accountInfo)
-    return accountInfo
+    return accountInfo.hbars
   }
   
   
   // 5. hedera_signAndExecuteTransaction
   export async function hedera_signAndExecuteTransaction(dAppConnector: DAppConnector,sender:string,receiver:string) {
-    const transaction = new TransferTransaction()
-    .setTransactionId(TransactionId.generate(sender))
-      .addHbarTransfer(sender, new Hbar(-1))
-      .addHbarTransfer(receiver, new Hbar(+1))
+    // const transaction = new TransferTransaction()
+    // .setTransactionId(TransactionId.generate(sender))
+    //   .addHbarTransfer(sender, new Hbar(-1))
+    //   .addHbarTransfer(receiver, new Hbar(+1))
+
+      // ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿୨ @jules: account creation tx ୧︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
+      const transaction = undefined
+  
+      // ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿୨ @jules: change of key ୧︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
+      // const transaction =
+
+      // ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
   
     const params: SignAndExecuteTransactionParams = {
       // @ts-ignore
@@ -104,9 +114,9 @@ export async function hedera_getNodeAddresses(dAppConnector: DAppConnector) {
       signerAccountId: 'hedera:testnet:' + sender,
     }
   
-    console.log(params)
-  
-    return await dAppConnector!.signAndExecuteTransaction(params)
+    const ret=  await dAppConnector!.signAndExecuteTransaction(params)
+    console.log(ret)
+    return ret;
   }
   
   // 6. hedera_signTransaction
