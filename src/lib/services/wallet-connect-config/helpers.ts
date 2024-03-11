@@ -1,5 +1,5 @@
 import { SignClientTypes } from "@walletconnect/types";
-import { LedgerId } from "@hashgraph/sdk";
+import { AccountId, LedgerId } from "@hashgraph/sdk";
 import {
   HederaSessionEvent,
   HederaJsonRpcMethod,
@@ -43,6 +43,10 @@ export function getMyAccountId(){
 }
 
 // ︵‿︵‿୨ DApp Metadata services ୧‿︵‿︵
+
+export function getNodeAccountId(){
+  return AccountId.fromString('0.0.3')
+}
 
 export function getDAppMetadata(){
     return {

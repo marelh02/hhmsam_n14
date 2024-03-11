@@ -40,6 +40,7 @@ import {
 	HederaChainId,
 	verifyMessageSignature,
 } from '@hashgraph/hedera-wallet-connect';
+import { getNodeAccountId } from './helpers';
 
 // ︵‿︵‿୨ JSON RPC Methods, KEEP OUT!!! ୧‿︵‿︵
 
@@ -47,48 +48,41 @@ export async function hedera_getNodeAddresses(dAppConnector: DAppConnector) {
 	return await dAppConnector!.getNodeAddresses();
 }
 
-export async function hedera_executeTransaction(dAppConnector: DAppConnector) {
-	// const bodyBytes = Buffer.from(getState('execute-transaction-body'), 'base64')
-	// const sigMap = base64StringToSignatureMap(getState('execute-transaction-signature-map'))
-	// const bytes = proto.Transaction.encode({ bodyBytes, sigMap }).finish()
-	// const transactionList = transactionToBase64String(Transaction.fromBytes(bytes))
-	// const params: ExecuteTransactionParams = { transactionList }
-	// return await dAppConnector!.executeTransaction(params)
+
+
+// const sigMap = base64StringToSignatureMap(x)
+export async function hedera_executeTransaction(dAppConnector: DAppConnector,
+	transactionBodyB64: string,
+	sigMap: proto.SignatureMap
+) {
+	const bodyBytes = Buffer.from(transactionBodyB64, 'base64')
+	const bytes = proto.Transaction.encode({ bodyBytes, sigMap }).finish()
+	//@ts-ignore
+	const transactionList = transactionToBase64String(Transaction.fromBytes(bytes))
+	const params: ExecuteTransactionParams = { transactionList }
+	//@ts-ignore
+	const { transactionId } = await dAppConnector!.executeTransaction(params)
+	return transactionId
 }
 
-// 3. hedera_signMessage
-export async function hedera_signMessage(dAppConnector: DAppConnector) {
-	// const message = getState('sign-message')
-	// const params: SignMessageParams = {
-	//   signerAccountId: 'hedera:testnet:' + getState('sign-message-from'),
-	//   message,
-	// }
-	// const { signatureMap } = await dAppConnector!.signMessage(params)
-	// const accountPublicKey = PublicKey.fromString(getState('public-key'))
-	// const verified = verifyMessageSignature(message, signatureMap, accountPublicKey)
-	// document.getElementById('sign-message-result')!.innerHTML =
-	//   `Message signed - ${verified}: ${message}`
-	// return signatureMap
-}
 
-// 4. SignAndExecuteQuery
+// 4. SignAndExecuteQuery -> done
+//returns bytes of the query result, must be a Hedera query
 export async function hedera_signAndExecuteQuery(
 	dAppConnector: DAppConnector,
-	accountId: string
+	signerAccountId: string,
+	query: any
 ) {
-	const query = new AccountBalanceQuery().setAccountId(accountId);
 	const params: SignAndExecuteQueryParams = {
-		signerAccountId: 'hedera:testnet:' + accountId,
+		signerAccountId: 'hedera:testnet:' + signerAccountId,
 		// @ts-ignore
 		query: queryToBase64String(query),
 	};
-	console.log('just before sending query');
+
 	// @ts-ignore
 	const { response } = await dAppConnector!.signAndExecuteQuery(params);
 	const bytes = Buffer.from(response, 'base64');
-	const accountInfo = AccountBalance.fromBytes(bytes);
-	console.log(accountInfo);
-	return accountInfo.hbars;
+	return bytes
 }
 
 // 5. hedera_signAndExecuteTransaction
@@ -97,57 +91,31 @@ export async function hedera_signAndExecuteTransaction(
 	sender: string,
 	receiver: string
 ) {
-	// const transaction = new TransferTransaction()
-	// .setTransactionId(TransactionId.generate(sender))
-	//   .addHbarTransfer(sender, new Hbar(-1))
-	//   .addHbarTransfer(receiver, new Hbar(+1))
+	const transaction = new TransferTransaction()
+		.setTransactionId(TransactionId.generate(sender))
+		.addHbarTransfer(sender, new Hbar(-1))
+		.addHbarTransfer(receiver, new Hbar(+1))
 
-	// ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿୨ @jules: account creation tx ୧︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
-	const walletConnect: any;
-	const initialKey = await walletConnect.getCurrentUserKey();
 
-	//Create the transaction
-	const transaction = await new AccountCreateTransaction()
-		.setKey(PublicKey.fromString(initialKey))
-		.setInitialBalance(new Hbar(1))
-		.freezeWithSigner(await walletConnect.getSigner());
-
-	//Sign the transaction with the client operator private key and submit to a Hedera network
-	const txResponse: TransactionReceipt = await walletConnect.executeTransaction(
-		transaction
-	);
-
-	console.log(
-		`The new single key account ID is: ${txResponse.accountId?.toString()}`
-	);
-
-	const newMsAccountId: string | undefined = txResponse.accountId?.toString();
-
-	if (newMsAccountId === undefined) {
-		throw new Error('Could not get new multisig account ID');
-	}
 
 	// ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿୨ @jules: change of key ୧︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
-	/*
-	const keyList: PublicKey[] = [];
-	const threshold = 2;
 
-	const multisigPubKeyList = new KeyList(keyList);
 
-	if (threshold > 0 && threshold <= keyList.length) {
-		multisigPubKeyList.setThreshold(threshold);
-	}
+	// 	const keyList: PublicKey[] = [];
+	// 	const threshold = 1;
+	//   keyList.push(PublicKey.fromStringECDSA("302d300706052b8104000a032200033888701662af25e9e5ac7a460ecc04b255663c276e85872a183240db0a98e1dc"))
 
-	const nodeId: AccountId[] = [new AccountId(3)];
+	// 	const multisigPubKeyList = new KeyList(keyList);
 
-	const makeMultisigTx = await new AccountUpdateTransaction()
-		//.setNodeAccountIds(nodeId)
-		.setAccountId(newMsAccountId)
-		.setKey(multisigPubKeyList)
-		.freezeWithSigner(await walletConnect.getSigner());
+	// 	if (threshold > 0 && threshold <= keyList.length) {
+	// 		multisigPubKeyList.setThreshold(threshold);
+	// 	}
 
-	walletConnect.signTransaction(makeMultisigTx);
-  */
+	// 	const transaction = new AccountUpdateTransaction()
+	//   .setTransactionId(TransactionId.generate(sender))
+	// 		.setAccountId(receiver)
+	// 		.setKey(multisigPubKeyList)
+	// 		.addSignature()
 
 	// ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
 
@@ -162,78 +130,24 @@ export async function hedera_signAndExecuteTransaction(
 	return ret;
 }
 
+
 // 6. hedera_signTransaction
-export async function hedera_signTransaction(dAppConnector: DAppConnector) {
-	// const transaction = new TransferTransaction()
-	//   .setTransactionId(TransactionId.generate(getState('sign-from')))
-	//   .setMaxTransactionFee(new Hbar(1))
-	//   .addHbarTransfer(getState('sign-from'), new Hbar(-getState('sign-amount')))
-	//   .addHbarTransfer(getState('sign-to'), new Hbar(+getState('sign-amount')))
-	// const params: SignTransactionParams = {
-	//   signerAccountId: 'hedera:testnet:' + getState('sign-from'),
-	//   transactionBody: transactionBodyToBase64String(
-	//     // must specify a node account id for the transaction body
-	//     transactionToTransactionBody(transaction, AccountId.fromString('0.0.3')),
-	//   ),
+// must specify a node account id for the transaction body, the transaction must have an id from the payer acc ID
+export async function hedera_signTransaction(dAppConnector: DAppConnector,
+	signerAccountId: string,
+	txBody64: any) {
+
+	const params: SignTransactionParams = {
+		signerAccountId: 'hedera:testnet:' + signerAccountId,
+		// @ts-ignore
+		transactionBody: txBody64,
+	}
+
+	// @ts-ignore
+	const { signatureMap } = await dAppConnector!.signTransaction(params)
+	// @ts-ignore
+	const sigMap = base64StringToSignatureMap(signatureMap)
+	console.log("Generated sigMap is: ", sigMap);
+
+	return { params, signatureMap }
 }
-
-//   const { signatureMap } = await dAppConnector!.signTransaction(params)
-//   document.getElementById('sign-transaction-result')!.innerText = JSON.stringify(
-//     { params, signatureMap },
-//     null,
-//     2,
-//   )
-//   console.log({ params, signatureMap })
-// }
-
-// /*
-//  * Error handling simulation
-//  */
-// export async function simulateGossipNodeError(dAppConnector: DAppConnector) {
-//   const sender = sender || getState('send-from')
-//   const recepient = receiver || getState('send-to')
-
-//   const transaction = new TransferTransaction()
-//     .setNodeAccountIds([new AccountId(999)]) // this is invalid node id
-//     .setTransactionId(TransactionId.generate(sender))
-//     .addHbarTransfer(sender, new Hbar(-5))
-//     .addHbarTransfer(recepient, new Hbar(+5))
-
-//   const params: SignAndExecuteTransactionParams = {
-//     transactionList: transactionToBase64String(transaction),
-//     signerAccountId: 'hedera:testnet:' + sender,
-//   }
-
-//   return await dAppConnector!.signAndExecuteTransaction(params)
-// }
-
-// document.getElementById('error-gossip-node')!.onsubmit = (e: SubmitEvent) =>
-// showErrorOrSuccess(simulateGossipNodeError, e)
-
-// export async function simulateTransactionExpiredError(dAppConnector: DAppConnector) {
-//   const sender = 'hedera:testnet:' + (sender || getState('send-from'))
-//   const recepient = receiver || getState('send-to')
-
-//   const transaction = new TransferTransaction()
-//     // set valid start to 15 seconds ago
-//     .setTransactionId(
-//       TransactionId.withValidStart(
-//         AccountId.fromString(sender),
-//         Timestamp.fromDate(Date.now() - 15000),
-//       ),
-//     )
-//     // 15 seconds is a minimum valid duration otherwise there's an INVALID_TRANSACTION_DURATION error
-//     .setTransactionValidDuration(15)
-//     .addHbarTransfer(sender, new Hbar(-5))
-//     .addHbarTransfer(recepient, new Hbar(+5))
-
-//   const params: SignAndExecuteTransactionParams = {
-//     transaction: transactionToBase64String(transaction),
-//     signerAccountId: sender,
-//   }
-
-//   return await dAppConnector!.signAndExecuteTransaction(params)
-// }
-
-// document.getElementById('error-transaction-expired')!.onsubmit = (e: SubmitEvent) =>
-// showErrorOrSuccess(simulateTransactionExpiredError, e)
