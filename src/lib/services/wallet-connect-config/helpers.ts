@@ -38,15 +38,11 @@ export function isUserConnected(){
   return getDAppConnector()?.signers?.length>0;
 }
 
-export function getMyAccountId(){
-  return getDAppConnector()?.signers[0].getAccountId().toString()
+export function getMyAccountId(dAppConnector:DAppConnector){
+  return dAppConnector?.signers[0].getAccountId().toString()
 }
 
 // ︵‿︵‿୨ DApp Metadata services ୧‿︵‿︵
-
-export function getNodeAccountId(){
-  return AccountId.fromString('0.0.3')
-}
 
 export function getDAppMetadata(){
     return {

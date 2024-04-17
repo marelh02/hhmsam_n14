@@ -40,7 +40,6 @@ import {
 	HederaChainId,
 	verifyMessageSignature,
 } from '@hashgraph/hedera-wallet-connect';
-import { getNodeAccountId } from './helpers';
 
 // ︵‿︵‿୨ JSON RPC Methods, KEEP OUT!!! ୧‿︵‿︵
 
@@ -91,33 +90,12 @@ export async function hedera_signAndExecuteTransaction(
 	sender: string,
 	receiver: string
 ) {
-	const transaction = new TransferTransaction()
+	try {
+		const transaction = new TransferTransaction()
 		.setTransactionId(TransactionId.generate(sender))
 		.addHbarTransfer(sender, new Hbar(-1))
 		.addHbarTransfer(receiver, new Hbar(+1))
 
-
-
-	// ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿୨ @jules: change of key ୧︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
-
-
-	// 	const keyList: PublicKey[] = [];
-	// 	const threshold = 1;
-	//   keyList.push(PublicKey.fromStringECDSA("302d300706052b8104000a032200033888701662af25e9e5ac7a460ecc04b255663c276e85872a183240db0a98e1dc"))
-
-	// 	const multisigPubKeyList = new KeyList(keyList);
-
-	// 	if (threshold > 0 && threshold <= keyList.length) {
-	// 		multisigPubKeyList.setThreshold(threshold);
-	// 	}
-
-	// 	const transaction = new AccountUpdateTransaction()
-	//   .setTransactionId(TransactionId.generate(sender))
-	// 		.setAccountId(receiver)
-	// 		.setKey(multisigPubKeyList)
-	// 		.addSignature()
-
-	// ︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿
 
 	const params: SignAndExecuteTransactionParams = {
 		// @ts-ignore
@@ -128,6 +106,10 @@ export async function hedera_signAndExecuteTransaction(
 	const ret = await dAppConnector!.signAndExecuteTransaction(params);
 	console.log(ret);
 	return ret;
+	} catch (e) {
+		console.error("Tx failed")
+		console.error(e)
+	}
 }
 
 
