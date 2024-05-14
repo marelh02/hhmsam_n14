@@ -1,5 +1,6 @@
-import { AccountId, PrivateKey, PublicKey, Client, TransferTransaction, Hbar, Transaction, Signer } from "@hashgraph/sdk";
+import { AccountId, PrivateKey, PublicKey, Client, TransferTransaction, Hbar, Transaction, Signer, Provider, Wallet, LocalProvider } from "@hashgraph/sdk";
 import { proto } from '@hashgraph/proto';
+
 
 const production = process.env.NEXT_PUBLIC_IS_PRODUCTION === "true"
 
@@ -35,19 +36,28 @@ const DAppTxExecutor = {
         sigMap: any) {        
         const myAccountId = AccountId.fromString(process.env.DAPP_CLIENT_ACCOUNT_ID!);
         const myPrivateKey = PrivateKey.fromStringECDSA(process.env.DAPP_CLIENT_PRIVATE_KEY!);
-        console.log("pk is: ",myPrivateKey.toStringRaw);
         
         const client = production == false ? Client.forTestnet() : Client.forMainnet()
-        client.setOperator(myAccountId, myPrivateKey);
+        // client.setOperator(myAccountId, myPrivateKey);
+        const pro = new LocalProvider()
+        const nabu = new Wallet(myAccountId,myPrivateKey,pro)
+        
+        
+        
         try {
+            console.log("We try a provider");
+            
             const bodyBytes = Buffer.from(transactionBodyB64, 'base64')
             const bytes = proto.Transaction.encode({ bodyBytes, sigMap }).finish()
             //@ts-ignore	
             const signedTransaction = Transaction.fromBytes(bytes)
-            const submitTx = await signedTransaction.execute(client)
-            //Get the transaction ID
-            const txId = submitTx.transactionId.toString();                        
-            return txId;
+            const xx = await pro.call(signedTransaction)
+            console.log(xx);
+            
+            // const submitTx = await signedTransaction.execute(client)
+            // //Get the transaction ID
+            // const txId = submitTx.transactionId.toString();                        
+            // return txId;
         } catch (e: any) {
             console.error(e);
         }

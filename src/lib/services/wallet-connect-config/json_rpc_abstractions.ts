@@ -88,13 +88,17 @@ export async function hedera_signAndExecuteQuery(
 export async function hedera_signAndExecuteTransaction(
 	dAppConnector: DAppConnector,
 	sender: string,
-	receiver: string
+	receiver: string,
+	amm: number
 ) {
 	try {
+		const stxid= TransactionId.generate(sender)
+		console.log("stxid is: ",stxid.toString());
+		
 		const transaction = new TransferTransaction()
-		.setTransactionId(TransactionId.generate(sender))
-		.addHbarTransfer(sender, new Hbar(-1))
-		.addHbarTransfer(receiver, new Hbar(+1))
+		.setTransactionId(stxid)
+		.addHbarTransfer(sender, new Hbar(-amm))
+		.addHbarTransfer(receiver, new Hbar(+amm))
 
 
 	const params: SignAndExecuteTransactionParams = {

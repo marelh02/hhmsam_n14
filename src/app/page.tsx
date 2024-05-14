@@ -11,35 +11,39 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
   //'0.0.3608076'
-  const accountID1 = "0.0.3608076"
-  const accountID2 = "0.0.3671301"
-  const msAccountID = "0.0.3692477"
+  const accountID1 = "0.0.3608076" //braven accs//"0.0.3608076"
+  const accountID2 = "0.0.3642918" //mozilla acc 
+  const msAccountID = "0.0.3608076"
   const [dAppConnector, setDAppConnector] = useState(newConnector());
   const [m3, setM3] = useState("Still nothing here")
   const [m4, setM4] = useState("Still nothing here")
   const [m5, setM5] = useState("Still nothing here")
   const [txBody, setTxBody] = useState<any>(null)
-  const [sms, setSMs] = useState<any[]>([])  
+  const [sms, setSMs] = useState<any[]>([])
   const [bb, setBb] = useState<any>(null)
-  
-  const mergeSigMaps=():any=>{
-    let signatureMaps = sms.map(x=>base64StringToSignatureMap(x))
-    let gSignatureMap = signatureMaps.shift()    
-    signatureMaps.forEach(x=>gSignatureMap!.sigPair.push(x.sigPair[0]))
-    
+
+  const mergeSigMaps = (): any => {
+    let signatureMaps = sms.map(x => base64StringToSignatureMap(x))
+    let gSignatureMap = signatureMaps.shift()
+    signatureMaps.forEach(x => gSignatureMap!.sigPair.push(x.sigPair[0]))
+
     return gSignatureMap
   }
-  
+
 
   useEffect(() => {
     const f = async () => {
       const nodeAccId = await DAppTxExecutor.getRandomNodeAccountId()
+
+      const stxid = TransactionId.generate(accountID1)
+      console.log("stxid is: ", stxid.toString());
+
       // @ts-ignore
       setBb(transactionBodyToBase64String(transactionToTransactionBody(new TransferTransaction()
-      .setTransactionId(TransactionId.generate(accountID1))
+        .setTransactionId(stxid)
         .setMaxTransactionFee(new Hbar(2))
-        .addHbarTransfer(accountID1, new Hbar(-1))
-        .addHbarTransfer(accountID2, new Hbar(+1))
+        .addHbarTransfer(accountID1, new Hbar(-13))
+        .addHbarTransfer(accountID2, new Hbar(+13))
         .setNodeAccountIds([nodeAccId,]), nodeAccId),))
     }
     f()
@@ -50,7 +54,7 @@ export default function Page() {
       console.log("We try to init");
       let x = dAppConnector
       await init(x)
-      console.log("Connector is: ",x);      
+      console.log("Connector is: ", x);
       setDAppConnector(x)
     } catch (error) {
       console.error("Failed to init")
@@ -63,7 +67,7 @@ export default function Page() {
       console.log("We try to connect");
       let x = dAppConnector
       await connect(x)
-      console.log("Connector is: ",x);
+      console.log("Connector is: ", x);
       setDAppConnector(x)
     } catch (error) {
       console.error("Failed to open connector")
@@ -88,16 +92,17 @@ export default function Page() {
     try {
       console.log("We try to exec tx");
       let x = dAppConnector
-      console.log("The list of sm: ",sms);
-      let txid = await DAppTxExecutor.dapp_executor(bb,mergeSigMaps())
-      console.log("Check: "+txid);
-      
-      // const y = await hedera_executeTransaction(x,bb,mergeSigMaps())
-      // console.log(y);      
-      // setDAppConnector(x)
-    } catch (error) {
+      // console.log("The list of sm: ",sms);
+      // let txid = await DAppTxExecutor.dapp_executor(bb,mergeSigMaps())
+      // console.log("Check: "+txid);
+
+      const y = await hedera_executeTransaction(x, bb, mergeSigMaps())
+      console.log(y);
+      setDAppConnector(x)
+    } catch (error: any) {
       console.error("Failed to exec tx")
       console.error(error);
+      console.error("msg", error.message);
 
     }
   }
@@ -106,18 +111,20 @@ export default function Page() {
     try {
       console.log("We try to sign tx");
       let x = dAppConnector
+      console.log("yer id is: "+getMyAccountId(x));
+      
       let txres = await hedera_signTransaction(x, msAccountID,
         bb
       )
       // setTxBody(txres.params.transactionBody)
       setBb(txres.params.transactionBody)
-      setSMs([...sms,txres.signatureMap])
+      setSMs([...sms, txres.signatureMap])
       console.log("txres", txres);
-      
+
       setDAppConnector(x)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to exec tx")
-      console.error(error);
+      console.error("msg", error.message);
     }
   }
 
@@ -126,16 +133,17 @@ export default function Page() {
       console.log("We try to exec tx");
       let x = dAppConnector
 
-      console.log("the account id we found on the connector is ",getMyAccountId(x));
-      
-      let txres = await hedera_signAndExecuteTransaction(x,accountID1,accountID2)
-      
+      console.log("the account id we found on the connector is ", getMyAccountId(x));
+
+      let txres = await hedera_signAndExecuteTransaction(x, accountID1, accountID2, 15)
+
       console.log("txres", txres);
       setM5(JSON.stringify(txres))
       setDAppConnector(x)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to exec tx")
       console.error(error);
+      console.error("msg", error.message);
     }
   }
   return (
@@ -145,7 +153,7 @@ export default function Page() {
         dAppConnector.isInitializing ? <h1>We are initializing</h1> : <></>
       }
 
-<br /><br />
+      <br /><br />
       <div className="mainContainer">
         <button onClick={clickHandler0}>Init wallet</button>
       </div>
